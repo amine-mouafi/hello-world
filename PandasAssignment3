@@ -1,0 +1,81 @@
+import pandas as pd
+import numpy as np
+
+def get_energy():
+    energy = pd.read_excel('Energy Indicators.xls', skiprows=17)
+    energy.rename(columns= {'Unnamed: 2':'Country', 
+                        'Petajoules':'Energy Supply',
+                        'Gigajoules':'Energy Supply per Capita',
+                        '%':'% Renewable'}, inplace=True)
+    columns_to_keep = ['Country',
+                   'Energy Supply',
+                   'Energy Supply per Capita',
+                   '% Renewable']
+
+    energy = energy[columns_to_keep]
+    energy = energy[:227]
+    energy.replace('...', np.NaN, inplace=True)
+    energy['Country'] = energy['Country'].map(lambda x: x.rstrip('0123456789'))
+    energy.replace({'Country':{'United States of America':'United States',
+                           'United Kingdom of Great Britain and Northern Ireland': 'United Kingdom',
+                           'China, Hong Kong Special Administrative Region': 'Hong Kong',
+                           'Republic of Korea': 'South Korea'}}, inplace=True)
+    energy['Energy Supply'] *= 1000000
+    energy['Country'] = energy['Country'].str.split('(', expand=True, n=1)
+    energy['Country'] = energy['Country'].str.strip()
+    energy = energy.set_index('Country')
+    return energy
+
+
+def get_GDP():
+
+    GDP = pd.read_csv('world_bank.csv', skiprows=4)
+    GDP.replace({'Country Name':{"Korea, Rep.": "South Korea",
+                             "Iran, Islamic Rep.": "Iran",
+                             "Hong Kong SAR, China": "Hong Kong"}}, inplace=True)
+    GDP = GDP.set_index('Country Name')
+    return GDP
+
+
+def get_ScimEn():
+
+    ScimEn = pd.read_excel('scimagojr-3.xlsx')
+    ScimEn = ScimEn.set_index('Country')
+    return ScimEn
+
+
+def answer_one():
+    
+    energy = get_energy()
+    GDP = get_GDP()
+    ScimEn = get_ScimEn()
+    final = pd.merge(pd.merge(energy, GDP, how='inner', left_index=True, right_index=True), ScimEn, how='inner', left_index=True, right_index=True)
+
+    columns_1 = ['Rank',
+             'Documents',
+             'Citable documents',
+             'Citations',
+             'Self-citations',
+             'Citations per document',
+             'H index', 'Energy Supply',
+             'Energy Supply per Capita',
+             '% Renewable',
+             '2006',
+             '2007',
+             '2008',
+             '2009',
+             '2010',
+             '2011',
+             '2012',
+             '2013',
+             '2014',
+             '2015']
+
+    final1 = final[columns_1]
+
+    final1 = final1[final['Rank']<16]
+
+    return final1
+
+
+answer_one()
